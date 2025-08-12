@@ -43,6 +43,7 @@ class Block:
         # Collision avec les autres blocs
         for other in Block.block_list:
             if other != self and self.block.colliderect(other.block):
+                self.change_color(other)
                 dx = (self.block.centerx - other.block.centerx)
                 dy = (self.block.centery - other.block.centery)
 
@@ -56,7 +57,7 @@ class Block:
                     else:
                         self.pos[0] -= overlap_x
                     self.velocity[0] = -self.velocity[0]
-                    self.change_color(other)
+                    
                 else:
                     # Déplacer verticalement pour ne plus être en contact
                     if dy > 0:
@@ -64,18 +65,17 @@ class Block:
                     else:
                         self.pos[1] -= overlap_y
                     self.velocity[1] = -self.velocity[1]
-                    self.change_color(other)
 
                 # Mettre à jour le rect après correction
                 self.block.topleft = self.pos
 
     def change_color(self, other):
-        if self.color == (255, 0, 0) and other == (0, 255, 0):
-            self.color = (0, 255, 0)
+        if self.color == (255, 0, 0) and other.color == (0, 0, 255):
+            self.color = (0, 0, 255)
 
-        elif self.color == (255, 0, 0) and other == (0, 0, 255):
-            other.color = (255, 0, 0)
+        elif self.color == (0, 255, 0) and other.color == (255, 0, 0):
+            self.color = (255, 0, 0)
 
-        elif self.color == (0, 255, 0) and other == (0, 0, 255):
+        elif self.color == (0, 0, 255) and other.color == (0, 255, 0):
             self.color = (0, 255, 0)
         

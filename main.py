@@ -11,15 +11,15 @@ field = Field(800, 600)  # Création d'une instance avec taille personnalisée
 block_list = []
 
 for _ in range(10):
-    block = Block(15, 15, random.randint(0, 700), random.randint(0, 500), 1)
+    block = Block(20, 20, random.randint(0, 700), random.randint(0, 500), 1)
     block_list.append(block)
 
 for _ in range(10):
-    block = Block(15, 15, random.randint(0, 700), random.randint(0, 500), 2)
+    block = Block(20, 20, random.randint(0, 700), random.randint(0, 500), 2)
     block_list.append(block)
 
 for _ in range(10):
-    block = Block(15, 15, random.randint(0, 700), random.randint(0, 500), 0)
+    block = Block(20, 20, random.randint(0, 700), random.randint(0, 500), 0)
     block_list.append(block)
 
 while running:
