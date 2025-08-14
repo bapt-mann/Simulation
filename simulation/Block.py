@@ -11,6 +11,8 @@ class Block:
 
     images = {}
 
+    test = True
+
     def __init__(self, _width, _height, _pos_x, _pos_y, _color):
 
         Block.block_list.append(self)  # Ajoute l'instance à la liste des blocs 
