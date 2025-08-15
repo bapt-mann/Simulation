@@ -8,8 +8,10 @@ class Block:
 
     BASE_DIR = os.path.dirname(__file__)  # Dossier du fichier actuel
     IMG_DIR = os.path.join(BASE_DIR, "assets", "images")
-
     images = {}
+
+    SOUND_DIR = os.path.join(BASE_DIR, "assets", "sounds")
+    sounds = {}
 
     test = True
 
@@ -50,6 +52,16 @@ class Block:
             pygame.image.load(os.path.join(Block.IMG_DIR, "plant.png")).convert_alpha(),
             size
         )
+
+    def load_sounds():
+        Block.sounds["water"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "water_sound.mp3"))
+        Block.sounds["water"].set_volume(0.2)
+
+        Block.sounds["fire"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "fire.mp3"))
+        Block.sounds["fire"].set_volume(0.2)
+
+        Block.sounds["plant"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "plant_sound.mp3"))
+        Block.sounds["plant"].set_volume(0.2)
 
     def move(self):
         self.pos[0] += self.velocity[0]
@@ -105,13 +117,13 @@ class Block:
 
     def change_color(self, other):
         if self.image == Block.images["fire"] and other.image == Block.images["water"]:
+            Block.sounds["water"].play()
             self.image = Block.images["water"]
 
         elif self.image == Block.images["plant"] and other.image == Block.images["fire"]:
+            Block.sounds["fire"].play()
             self.image = Block.images["fire"]
 
         elif self.image == Block.images["water"] and other.image == Block.images["plant"]:
+            Block.sounds["plant"].play()
             self.image = Block.images["plant"]
-        
-
-        
