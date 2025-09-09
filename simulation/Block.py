@@ -57,7 +57,7 @@ class Block:
         Block.sounds["water"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "water_sound.mp3"))
         Block.sounds["water"].set_volume(0.2)
 
-        Block.sounds["fire"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "fire.mp3"))
+        Block.sounds["fire"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "fire_sound.mp3"))
         Block.sounds["fire"].set_volume(0.2)
 
         Block.sounds["plant"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "plant_sound.mp3"))
@@ -70,7 +70,7 @@ class Block:
         self.image_rect = self.image.get_rect()
         self.image_rect.center = self.block.center 
 
-    def detect_collision(self, screen_size=[400, 400]):
+    def detect_collision(self, invert, screen_size=[400, 400]):
         # Collision avec les bords
         if self.pos[0] < 0:
             self.pos[0] = 0
@@ -89,7 +89,7 @@ class Block:
         # Collision avec les autres blocs
         for other in Block.block_list:
             if other != self and self.block.colliderect(other.block):
-                self.change_color(other)
+                self.change_color(other, invert)
                 dx = (self.block.centerx - other.block.centerx)
                 dy = (self.block.centery - other.block.centery)
 
@@ -115,15 +115,30 @@ class Block:
                 # Mettre à jour le rect après correction
                 self.block.topleft = self.pos
 
-    def change_color(self, other):
-        if self.image == Block.images["fire"] and other.image == Block.images["water"]:
-            Block.sounds["water"].play()
-            self.image = Block.images["water"]
+    def change_color(self, other, invert):
+        if not invert:
+            if self.image == Block.images["fire"] and other.image == Block.images["water"]:
+                Block.sounds["water"].play()
+                self.image = Block.images["water"]
 
-        elif self.image == Block.images["plant"] and other.image == Block.images["fire"]:
-            Block.sounds["fire"].play()
-            self.image = Block.images["fire"]
+            elif self.image == Block.images["plant"] and other.image == Block.images["fire"]:
+                Block.sounds["fire"].play()
+                self.image = Block.images["fire"]
 
-        elif self.image == Block.images["water"] and other.image == Block.images["plant"]:
-            Block.sounds["plant"].play()
-            self.image = Block.images["plant"]
+            elif self.image == Block.images["water"] and other.image == Block.images["plant"]:
+                Block.sounds["plant"].play()
+                self.image = Block.images["plant"]
+
+        else:
+            if self.image == Block.images["fire"] and other.image == Block.images["plant"]:
+                self.image = Block.images["plant"]
+                Block.sounds["plant"].play()
+
+            elif self.image == Block.images["plant"] and other.image == Block.images["water"]:
+                self.image = Block.images["water"]
+                Block.sounds["water"].play()
+
+            elif self.image == Block.images["water"] and other.image == Block.images["fire"]:
+                self.image = Block.images["fire"]
+                Block.sounds["fire"].play()
+

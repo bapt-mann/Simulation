@@ -29,6 +29,7 @@ for _ in range(10):
 for _ in range(10):
     block = Block(block_size[0], block_size[1], random.randint(100, 600), random.randint(100, 400), 0)
     block_list.append(block)
+click = False
 
 while running:
     clock.tick(60)
@@ -36,8 +37,19 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    field.screen.fill((200,200,200))  # Nettoyer écran avant de dessiner
 
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        if not click:
+            click = True
+            field.invert = not field.invert
+
+    if event.type == pygame.MOUSEBUTTONUP:
+        click = False
+
+    #if(not field.invert) : field.screen.fill((field.color)) 
+    #else: field.screen.fill((field.color_invert))
+    field.draw_background()
+    
     for block in block_list:
         if Block.test:
             field.screen.blit(block.image, block.image_rect)
@@ -46,12 +58,10 @@ while running:
                 Block.test = False
         else:
             block.move()
-            block.detect_collision(field.size)
+            block.detect_collision(field.invert,field.size)
             field.screen.blit(block.image, block.image_rect)
 
-
     pygame.display.flip()  # Met à jour l'affichage
-
 pygame.quit()
 
 
