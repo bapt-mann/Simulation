@@ -1,6 +1,7 @@
 import os
 import pygame
 import random
+from pydub import AudioSegment
 
 class Block:
     block_list = []

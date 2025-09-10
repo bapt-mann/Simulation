@@ -10,6 +10,9 @@ class Field:
         # couleurs du dégradé sombre
         self.top_color = (30, 30, 40)    # bleu nuit/gris très foncé
         self.bottom_color = (60, 60, 80) # gris bleuté un peu plus clair
+
+        self.top_color_invert = (40, 20, 60)
+        self.bottom_color_invert = (80, 40, 120)
 #top_color = (40, 20, 60) bottom_color = (80, 40, 120)
     def draw_background(self):
         """Dessine un dégradé vertical"""
@@ -21,9 +24,9 @@ class Field:
                 g = int(self.top_color[1] * (1 - ratio) + self.bottom_color[1] * ratio)
                 b = int(self.top_color[2] * (1 - ratio) + self.bottom_color[2] * ratio)
             else:
-                r = int(self.bottom_color[0] * (1 - ratio) + self.top_color[0] * ratio)
-                g = int(self.bottom_color[1] * (1 - ratio) + self.top_color[1] * ratio)
-                b = int(self.bottom_color[2] * (1 - ratio) + self.top_color[2] * ratio)
+                r = int(self.top_color_invert[0] * (1 - ratio) + self.top_color_invert[0] * ratio)
+                g = int(self.top_color_invert[1] * (1 - ratio) + self.top_color_invert[1] * ratio)
+                b = int(self.top_color_invert[2] * (1 - ratio) + self.top_color_invert[2] * ratio)
             
             pygame.draw.line(self.screen, (r, g, b), (0, y), (self.screen.get_width(), y))
 
