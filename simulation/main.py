@@ -54,7 +54,7 @@ for _ in range(10):
 click = False
 
 while running:
-    clock.tick(20)
+    clock.tick(120)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False

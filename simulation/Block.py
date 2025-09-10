@@ -89,33 +89,33 @@ class Block:
     def detect_collision_blocks(self):
         # Collision avec les autres blocs
         for other in Block.block_list:
-            if other == self or not self.block.colliderect(other.block):
-                return
-            self.switch_to(other)
-            dx = (self.block.centerx - other.block.centerx)
-            dy = (self.block.centery - other.block.centery)
-
-            overlap_x = (self.size[0] / 2 + other.size[0] / 2) - abs(dx)
-            overlap_y = (self.size[1] / 2 + other.size[1] / 2) - abs(dy)
-
-            if overlap_x < overlap_y:
-                # Déplacer horizontalement pour ne plus être en contact
-                if dx > 0:
-                    self.pos[0] += overlap_x
-                else:
-                    self.pos[0] -= overlap_x
-                self.velocity[0] = -self.velocity[0]
+            if other != self and self.block.colliderect(other.block):
                 
-            else:
-                # Déplacer verticalement pour ne plus être en contact
-                if dy > 0:
-                    self.pos[1] += overlap_y
-                else:
-                    self.pos[1] -= overlap_y
-                self.velocity[1] = -self.velocity[1]
+                self.switch_to(other)
+                dx = (self.block.centerx - other.block.centerx)
+                dy = (self.block.centery - other.block.centery)
 
-            # Mettre à jour le rect après correction
-            self.block.topleft = self.pos
+                overlap_x = (self.size[0] / 2 + other.size[0] / 2) - abs(dx)
+                overlap_y = (self.size[1] / 2 + other.size[1] / 2) - abs(dy)
+
+                if overlap_x < overlap_y:
+                    # Déplacer horizontalement pour ne plus être en contact
+                    if dx > 0:
+                        self.pos[0] += overlap_x
+                    else:
+                        self.pos[0] -= overlap_x
+                    self.velocity[0] = -self.velocity[0]
+                    
+                else:
+                    # Déplacer verticalement pour ne plus être en contact
+                    if dy > 0:
+                        self.pos[1] += overlap_y
+                    else:
+                        self.pos[1] -= overlap_y
+                    self.velocity[1] = -self.velocity[1]
+
+                # Mettre à jour le rect après correction
+                self.block.topleft = self.pos
 
     def detect_collision(self, screen_size=[400, 400]):
         self.detect_collision_field(screen_size)
