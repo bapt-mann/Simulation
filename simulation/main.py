@@ -7,6 +7,7 @@ pygame.init()
       
 clock = pygame.time.Clock()
 W, H = 650, 800
+fps = 60
 
 running = True
 field = Field(W, H)  # Création d'une instance avec taille personnalisée
@@ -19,17 +20,6 @@ Block.load_sounds()
 block_list = []
 
 
-H_top = H // 3  # exemple : 1/3 de l'écran pour la bande du haut
-
-# Bande horizontale du haut
-top_rect = (0, 0, W, H_top)
-
-# Colonne gauche en bas
-left_rect = (0, H_top, W // 2, H - H_top)
-
-# Colonne droite en bas
-right_rect = (W // 2, H_top, W // 2, H - H_top)
-
 bot_placement_l = int (field.size[0] / 2)
 
 placement_w = int (field.size[1]/3)
@@ -40,25 +30,15 @@ def set_invert():
 
 #pygame.draw.line(field, [255,255,255], start_pos, end_pos)
 
-# for _ in range(10):
-#     block = Block(block_size[0], block_size[1], random.randint(image_size[0], field.size[0]-image_size[0]), random.randint(image_size[1], placement_w-image_size[1]), 1)
-#     block_list.append(block)
+block_list = Block.spawn_random_block(block_size, 10, 0, [0,field.size[0]], [0,placement_w])
+block_list.extend( Block.spawn_random_block(block_size, 10, 1, [0,bot_placement_l], [placement_w,field.size[1]] ))
+block_list.extend( Block.spawn_random_block(block_size, 10, 2, [bot_placement_l,field.size[0]], [placement_w,field.size[1]]))
 
-# for _ in range(10):
-#     block = Block(block_size[0], block_size[1], random.randint(image_size[0], bot_placement_l-image_size[0]), random.randint(placement_w, field.size[1]-image_size[1]), 2)
-#     block_list.append(block)
-
-# for _ in range(10):
-#     block = Block(block_size[0], block_size[1], random.randint(bot_placement_l-image_size[0], field.size[0]-image_size[0]), random.randint(placement_w, field.size[1]-image_size[1]), 0)
-#     block_list.append(block)
-
-
-block_list = Block.spawn_random_block(block_size, 2, 0, [0,field.size[0]], [0,field.size[1]] )
 
 click = False
 
 while running:
-    clock.tick(60)
+    clock.tick(fps)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -85,7 +65,7 @@ while running:
                 Block.test = False
         else:
             block.move()
-            block.detect_collision(field.size)
+            if not block.collide : block.detect_collision(field.size)
             field.screen.blit(block.image, block.image_rect)
         for block in block_list:
             block.collide = False

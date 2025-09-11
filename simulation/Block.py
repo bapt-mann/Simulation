@@ -22,7 +22,17 @@ class Block:
 
         self.size = [_width, _height]
         self.pos = [_pos_x, _pos_y] 
+
         self.velocity = [random.randint(1, 3), random.randint(1, 3)]
+
+        self.negative_x = random.randint(0, 1)
+        self.negative_y = random.randint(0, 1)
+
+        if self.negative_x == 1: self.velocity[0] = -self.velocity[0]
+        if self.negative_y == 1: self.velocity[1] = -self.velocity[1]
+
+        # self.temp1 = random.random()*6
+        # self.temp = (3 - self.temp1) if self.temp1 < 3 else (self.temp1 - 6)
 
         self.block = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
 
@@ -90,7 +100,7 @@ class Block:
     def detect_collision_blocks(self):
         # Collision avec les autres blocs
         for other in Block.block_list:
-            if other != self and self.block.colliderect(other.block) and not self.collide and not other.collide:
+            if other != self and self.block.colliderect(other.block):
                 self.switch_to(other)
                 other.switch_to(self)
 
@@ -157,14 +167,14 @@ class Block:
         _width = block_size[0]
         _height = block_size[1]
 
-        _pos_x = range_x[1]/2 + block_size[0]/2
-        _pos_y = range_y[1]/2 + block_size[1]/2
+        _pos_x = range_x[1]/2 - block_size[0]/2
+        _pos_y = range_y[1]/2 - block_size[1]/2
 
-        for i in range (block_number-1) :
+        for i in range (block_number) :
             
-            if i != 1 : 
-                _pos_x = _pos_x + random.randint(int (range_x[0]), int(range_x[1] - block_size[0]/2))
-                _pos_y = _pos_y + random.randint(int(range_y[0]), int(range_y[1] - block_size[1]/2))
+            if i != 0 : 
+                _pos_x = random.randint(int (range_x[0]), int(range_x[1] - block_size[0]))
+                _pos_y = random.randint(int(range_y[0]), int(range_y[1] - block_size[1]))
             block = Block( _width, _height, _pos_x, _pos_y, type)
             block_list.append(block)
 
