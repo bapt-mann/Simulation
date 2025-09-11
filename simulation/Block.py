@@ -16,7 +16,7 @@ class Block:
     test = True
     invert = False
 
-    def __init__(self, _width, _height, _pos_x, _pos_y, _color):
+    def __init__(self, _width, _height, _pos_x, _pos_y, _type):
 
         Block.block_list.append(self)  # Ajoute l'instance à la liste des blocs 
 
@@ -26,14 +26,15 @@ class Block:
 
         self.block = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
 
-        self.color = Block.color_list[_color]
-        
+        self.color = Block.color_list[_type]
+
+        self.collide = False
 
         # Attribution d'une image depuis le cache
-        if _color == 0:
+        if _type == 0:
             self.image = Block.images["fire"]
             self.type = Type.fire
-        elif _color == 1:
+        elif _type == 1:
             self.image = Block.images["water"]
             self.type = Type.water
         else:
@@ -89,9 +90,13 @@ class Block:
     def detect_collision_blocks(self):
         # Collision avec les autres blocs
         for other in Block.block_list:
-            if other != self and self.block.colliderect(other.block):
-                
+            if other != self and self.block.colliderect(other.block) and not self.collide and not other.collide:
                 self.switch_to(other)
+                other.switch_to(self)
+
+                self.collide = True
+                other.collide = True
+
                 dx = (self.block.centerx - other.block.centerx)
                 dy = (self.block.centery - other.block.centery)
 
@@ -117,36 +122,12 @@ class Block:
                 # Mettre à jour le rect après correction
                 self.block.topleft = self.pos
 
+    def collision_block(self):
+        return
+
     def detect_collision(self, screen_size=[400, 400]):
         self.detect_collision_field(screen_size)
         self.detect_collision_blocks()
-
-    # def change_type(self, other):
-    #     if not Block.invert:
-    #         if self.image == Block.images["fire"] and other.image == Block.images["water"]:
-    #             Block.sounds["water"].play()
-    #             self.image = Block.images["water"]
-
-    #         elif self.image == Block.images["plant"] and other.image == Block.images["fire"]:
-    #             Block.sounds["fire"].play()
-    #             self.image = Block.images["fire"]
-
-    #         elif self.image == Block.images["water"] and other.image == Block.images["plant"]:
-    #             Block.sounds["plant"].play()
-    #             self.image = Block.images["plant"]
-
-    #     else:
-    #         if self.image == Block.images["fire"] and other.image == Block.images["plant"]:
-    #             self.image = Block.images["plant"]
-    #             Block.sounds["plant"].play()
-
-    #         elif self.image == Block.images["plant"] and other.image == Block.images["water"]:
-    #             self.image = Block.images["water"]
-    #             Block.sounds["water"].play()
-
-    #         elif self.image == Block.images["water"] and other.image == Block.images["fire"]:
-    #             self.image = Block.images["fire"]
-    #             Block.sounds["fire"].play()
 
     def switch_to(self, other):
         addition = self.type.value + other.type.value
@@ -171,5 +152,20 @@ class Block:
         self.image = Block.images[type]
         self.type = Type[type]
 
-    def spawn_random_block(screen_size, block_size):
-        raise NotImplementedError("Méthode non implémentée")
+    def spawn_random_block(block_size, block_number, type, range_x=[0,100], range_y=[0,100]):
+        block_list = []
+        _width = block_size[0]
+        _height = block_size[1]
+
+        _pos_x = range_x[1]/2 + block_size[0]/2
+        _pos_y = range_y[1]/2 + block_size[1]/2
+
+        for i in range (block_number-1) :
+            
+            if i != 1 : 
+                _pos_x = _pos_x + random.randint(int (range_x[0]), int(range_x[1] - block_size[0]/2))
+                _pos_y = _pos_y + random.randint(int(range_y[0]), int(range_y[1] - block_size[1]/2))
+            block = Block( _width, _height, _pos_x, _pos_y, type)
+            block_list.append(block)
+
+        return block_list

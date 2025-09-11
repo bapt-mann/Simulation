@@ -40,21 +40,25 @@ def set_invert():
 
 #pygame.draw.line(field, [255,255,255], start_pos, end_pos)
 
-for _ in range(10):
-    block = Block(block_size[0], block_size[1], random.randint(image_size[0], field.size[0]-image_size[0]), random.randint(image_size[1], placement_w-image_size[1]), 1)
-    block_list.append(block)
+# for _ in range(10):
+#     block = Block(block_size[0], block_size[1], random.randint(image_size[0], field.size[0]-image_size[0]), random.randint(image_size[1], placement_w-image_size[1]), 1)
+#     block_list.append(block)
 
-for _ in range(10):
-    block = Block(block_size[0], block_size[1], random.randint(image_size[0], bot_placement_l-image_size[0]), random.randint(placement_w, field.size[1]-image_size[1]), 2)
-    block_list.append(block)
+# for _ in range(10):
+#     block = Block(block_size[0], block_size[1], random.randint(image_size[0], bot_placement_l-image_size[0]), random.randint(placement_w, field.size[1]-image_size[1]), 2)
+#     block_list.append(block)
 
-for _ in range(10):
-    block = Block(block_size[0], block_size[1], random.randint(bot_placement_l-image_size[0], field.size[0]-image_size[0]), random.randint(placement_w, field.size[1]-image_size[1]), 0)
-    block_list.append(block)
+# for _ in range(10):
+#     block = Block(block_size[0], block_size[1], random.randint(bot_placement_l-image_size[0], field.size[0]-image_size[0]), random.randint(placement_w, field.size[1]-image_size[1]), 0)
+#     block_list.append(block)
+
+
+block_list = Block.spawn_random_block(block_size, 2, 0, [0,field.size[0]], [0,field.size[1]] )
+
 click = False
 
 while running:
-    clock.tick(120)
+    clock.tick(60)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -83,6 +87,8 @@ while running:
             block.move()
             block.detect_collision(field.size)
             field.screen.blit(block.image, block.image_rect)
+        for block in block_list:
+            block.collide = False
 
     pygame.display.flip()  # Met à jour l'affichage
 pygame.quit()
