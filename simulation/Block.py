@@ -18,7 +18,7 @@ class Block:
 
     def __init__(self, _width, _height, _pos_x, _pos_y, _type):
 
-        Block.block_list.append(self)  # Ajoute l'instance à la liste des blocs 
+        #Block.block_list.append(self)  # Ajoute l'instance à la liste des blocs 
 
         self.size = [_width, _height]
         self.pos = [_pos_x, _pos_y] 
@@ -31,8 +31,6 @@ class Block:
         if self.negative_x == 1: self.velocity[0] = -self.velocity[0]
         if self.negative_y == 1: self.velocity[1] = -self.velocity[1]
 
-        # self.temp1 = random.random()*6
-        # self.temp = (3 - self.temp1) if self.temp1 < 3 else (self.temp1 - 6)
 
         self.block = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
 
@@ -96,6 +94,38 @@ class Block:
                 self.pos[i] = screen_size[i] - self.size[i]
                 self.velocity[i] = -self.velocity[i]
 
+    def detect_collision_wall(self, wall):
+        # wall : [[x, y, width, height],...]
+        # Collision avec un mur (rectangle)
+        for w in wall:
+            wall_rect = pygame.Rect(w[0], w[1], w[2], w[3])
+            if self.block.colliderect(wall_rect):
+                # Détecter le côté de la collision
+                dx = (self.block.centerx - wall_rect.centerx)
+                dy = (self.block.centery - wall_rect.centery)
+
+                overlap_x = (self.size[0] / 2 + wall_rect.width / 2) - abs(dx)
+                overlap_y = (self.size[1] / 2 + wall_rect.height / 2) - abs(dy)
+
+                if overlap_x < overlap_y:
+                    # Déplacer horizontalement pour ne plus être en contact
+                    if dx > 0:
+                        self.pos[0] += overlap_x
+                    else:
+                        self.pos[0] -= overlap_x
+                    self.velocity[0] = -self.velocity[0]
+                    
+                else:
+                    # Déplacer verticalement pour ne plus être en contact
+                    if dy > 0:
+                        self.pos[1] += overlap_y
+                    else:
+                        self.pos[1] -= overlap_y
+                    self.velocity[1] = -self.velocity[1]
+
+                # Mettre à jour le rect après correction
+                self.block.topleft = self.pos
+    
 
     def detect_collision_blocks(self):
         # Collision avec les autres blocs
@@ -132,11 +162,10 @@ class Block:
                 # Mettre à jour le rect après correction
                 self.block.topleft = self.pos
 
-    def collision_block(self):
-        return
 
-    def detect_collision(self, screen_size=[400, 400]):
+    def detect_collision(self, screen_size=[400, 400], wall={}):
         self.detect_collision_field(screen_size)
+        self.detect_collision_wall(wall)
         self.detect_collision_blocks()
 
     def switch_to(self, other):
@@ -162,20 +191,35 @@ class Block:
         self.image = Block.images[type]
         self.type = Type[type]
 
-    def spawn_random_block(block_size, block_number, type, range_x=[0,100], range_y=[0,100]):
-        block_list = []
-        _width = block_size[0]
-        _height = block_size[1]
 
-        _pos_x = range_x[1]/2 - block_size[0]/2
-        _pos_y = range_y[1]/2 - block_size[1]/2
+    def spawn_random_block(block_size, block_number, type, range_x=[0,100], range_y=[0,100], max_attempts=1000):
+        _width, _height = block_size
 
-        for i in range (block_number) :
-            
-            if i != 0 : 
-                _pos_x = random.randint(int (range_x[0]), int(range_x[1] - block_size[0]))
-                _pos_y = random.randint(int(range_y[0]), int(range_y[1] - block_size[1]))
-            block = Block( _width, _height, _pos_x, _pos_y, type)
-            block_list.append(block)
+        for _ in range(block_number):
+            placed = False
+            attempts = 0
 
-        return block_list
+            while not placed and attempts < max_attempts:
+                _pos_x = random.randint(int(range_x[0]), int(range_x[1] - _width))
+                _pos_y = random.randint(int(range_y[0]), int(range_y[1] - _height))
+                block = Block(_width, _height, _pos_x, _pos_y, type)
+
+                # Vérifier collisions
+                collision = False
+                for other in Block.block_list:
+                    if block.block.colliderect(other.block):
+                        collision = True
+                        break
+
+                if not collision:
+                    Block.block_list.append(block)
+                    placed = True  # bloc validé
+
+                attempts += 1
+
+            if not placed:
+                print(f"⚠️ Impossible de placer un bloc après {max_attempts} essais.")
+                break
+
+        return Block.block_list
+
