@@ -28,9 +28,9 @@ def set_invert():
 
 #pygame.draw.line(field, [255,255,255], start_pos, end_pos)
 
-Block.spawn_random_block(block_size, 15, 0, [0,field.size[0]], [0,placement_w])
-Block.spawn_random_block(block_size, 15, 1, [0,bot_placement_l], [placement_w,field.size[1]] )
-Block.spawn_random_block(block_size, 15, 2, [bot_placement_l,field.size[0]], [placement_w,field.size[1]])
+Block.spawn_random_block( 10, 0, [0,field.size[0]], [0,placement_w])
+Block.spawn_random_block( 10, 2, [0,bot_placement_l], [placement_w,field.size[1]] )
+Block.spawn_random_block( 10, 1, [bot_placement_l,field.size[0]], [placement_w,field.size[1]])
 
 
 

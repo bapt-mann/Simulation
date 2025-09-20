@@ -40,13 +40,13 @@ class Block:
 
         # Attribution d'une image depuis le cache
         if _type == 0:
-            self.image = Block.images["fire"]
+            self.image = pygame.transform.smoothscale(Block.images["fire"], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
             self.type = Type.fire
         elif _type == 1:
-            self.image = Block.images["water"]
+            self.image = pygame.transform.smoothscale(Block.images["water"], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
             self.type = Type.water
         else:
-            self.image = Block.images["plant"]
+            self.image = pygame.transform.smoothscale(Block.images["plant"], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
             self.type = Type.plant
         
         self.image_rect = self.image.get_rect()
@@ -188,14 +188,24 @@ class Block:
 
     def set_state(self, type):
         Block.sounds[type].play()
-        self.image = Block.images[type]
+        self.image = pygame.transform.smoothscale(Block.images[type], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
         self.type = Type[type]
 
 
-    def spawn_random_block(block_size, block_number, type, range_x=[0,100], range_y=[0,100], max_attempts=1000):
-        _width, _height = block_size
+    def spawn_random_block( block_number, type, range_x=[0,100], range_y=[0,100], max_attempts=1000):
+    
+        size = random.randint(40, 70)
+
+        _width = size
+        _height = size
+
+        block_size = (size, size)
 
         for _ in range(block_number):
+
+            size = random.randint(40, 70)
+            _width = size
+            _height = size
             placed = False
             attempts = 0
 
