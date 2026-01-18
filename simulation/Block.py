@@ -1,235 +1,150 @@
-import os
 import pygame
 import random
-from block_type import Type
+from constants import ELEMENT_RULES
+from ResourceManager import ResourceManager
+
 class Block:
-    block_list = []
-    color_list = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+    def __init__(self, x, y, size, element_type):
+        # Utilisation de Vector2 pour la position et la vélocité
+        self.pos = pygame.Vector2(x, y)
+        self.vel = pygame.Vector2(
+            random.uniform(1, 3) * random.choice([-1, 1]),
+            random.uniform(1, 3) * random.choice([-1, 1])
+        )
+        self.size = size
+        self.rect = pygame.Rect(x, y, size, size)
+        self.type = element_type
+        self.image = pygame.transform.smoothscale(ResourceManager.get_img(element_type), (size, size))
+        self.color = ELEMENT_RULES[element_type]["color"]
 
-    BASE_DIR = os.path.dirname(__file__)  # Dossier du fichier actuel
-    IMG_DIR = os.path.join(BASE_DIR, "assets", "images")
-    images = {}
+    def move(self, screen_rect):
+        if self.type == "black":
+            return  # Le bloc noir ne bouge pas
 
-    SOUND_DIR = os.path.join(BASE_DIR, "assets", "sounds")
-    sounds = {}
-
-    test = True
-    invert = False
-
-    def __init__(self, _width, _height, _pos_x, _pos_y, _type):
-
-        #Block.block_list.append(self)  # Ajoute l'instance à la liste des blocs 
-
-        self.size = [_width, _height]
-        self.pos = [_pos_x, _pos_y] 
-
-        self.velocity = [random.randint(1, 3), random.randint(1, 3)]
-
-        self.negative_x = random.randint(0, 1)
-        self.negative_y = random.randint(0, 1)
-
-        if self.negative_x == 1: self.velocity[0] = -self.velocity[0]
-        if self.negative_y == 1: self.velocity[1] = -self.velocity[1]
-
-
-        self.block = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
-
-        self.color = Block.color_list[_type]
-
-        self.collide = False
-
-        # Attribution d'une image depuis le cache
-        if _type == 0:
-            self.image = pygame.transform.smoothscale(Block.images["fire"], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
-            self.type = Type.fire
-        elif _type == 1:
-            self.image = pygame.transform.smoothscale(Block.images["water"], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
-            self.type = Type.water
-        else:
-            self.image = pygame.transform.smoothscale(Block.images["plant"], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
-            self.type = Type.plant
+        self.pos += self.vel
         
-        self.image_rect = self.image.get_rect()
-        self.image_rect.center = self.block.center 
+        # Synchronisation du rect avant les tests
+        self.rect.topleft = (self.pos.x, self.pos.y)
 
+        # Bords Gauche / Droite
+        if self.rect.left < 0:
+            self.pos.x = 0
+            self.vel.x *= -1
+        elif self.rect.right > screen_rect.width:
+            self.pos.x = screen_rect.width - self.rect.width # On utilise la largeur réelle du rect
+            self.vel.x *= -1
 
-    def load_images(size):
-        Block.images["water"] = pygame.transform.scale(
-            pygame.image.load(os.path.join(Block.IMG_DIR, "water.png")).convert_alpha(),
-            size
-        )
-        Block.images["fire"] = pygame.transform.scale(
-            pygame.image.load(os.path.join(Block.IMG_DIR, "fire.png")).convert_alpha(),
-            size
-        )
-        Block.images["plant"] = pygame.transform.scale(
-            pygame.image.load(os.path.join(Block.IMG_DIR, "plant.png")).convert_alpha(),
-            size
-        )
+        # Bords Haut / Bas
+        if self.rect.top < 0:
+            self.pos.y = 0
+            self.vel.y *= -1
+        elif self.rect.bottom > screen_rect.height:
+            # Correction ici : on s'assure que le bas du rect touche exactement le bord
+            self.pos.y = screen_rect.height - self.rect.height
+            self.vel.y *= -1
 
-    def load_sounds():
-        Block.sounds["water"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "water_sound.mp3"))
-        Block.sounds["water"].set_volume(0.2)
-
-        Block.sounds["fire"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "fire_sound.mp3"))
-        Block.sounds["fire"].set_volume(0.2)
-
-        Block.sounds["plant"] = pygame.mixer.Sound(os.path.join(Block.SOUND_DIR, "plant_sound.mp3"))
-        Block.sounds["plant"].set_volume(0.2)
-
-    def move(self):
-        self.pos[0] += self.velocity[0]
-        self.pos[1] += self.velocity[1]
-        self.block = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
-        self.image_rect = self.image.get_rect()
-        self.image_rect.center = self.block.center 
-
-    def detect_collision_field(self, screen_size=[400, 400]):
-        # Collision avec les bords
-        for i in range(2):
-            if self.pos[i] < 0:
-                self.pos[i] = 0
-                self.velocity[i] = -self.velocity[i]
-            elif self.pos[i] + self.size[i] > screen_size[i]:
-                self.pos[i] = screen_size[i] - self.size[i]
-                self.velocity[i] = -self.velocity[i]
-
-    def detect_collision_wall(self, wall):
-        # wall : [[x, y, width, height],...]
-        # Collision avec un mur (rectangle)
-        for w in wall:
-            wall_rect = pygame.Rect(w[0], w[1], w[2], w[3])
-            if self.block.colliderect(wall_rect):
-                # Détecter le côté de la collision
-                dx = (self.block.centerx - wall_rect.centerx)
-                dy = (self.block.centery - wall_rect.centery)
-
-                overlap_x = (self.size[0] / 2 + wall_rect.width / 2) - abs(dx)
-                overlap_y = (self.size[1] / 2 + wall_rect.height / 2) - abs(dy)
-
-                if overlap_x < overlap_y:
-                    # Déplacer horizontalement pour ne plus être en contact
-                    if dx > 0:
-                        self.pos[0] += overlap_x
-                    else:
-                        self.pos[0] -= overlap_x
-                    self.velocity[0] = -self.velocity[0]
-                    
-                else:
-                    # Déplacer verticalement pour ne plus être en contact
-                    if dy > 0:
-                        self.pos[1] += overlap_y
-                    else:
-                        self.pos[1] -= overlap_y
-                    self.velocity[1] = -self.velocity[1]
-
-                # Mettre à jour le rect après correction
-                self.block.topleft = self.pos
+        # Mise à jour finale pour le dessin
+        self.rect.topleft = (self.pos.x, self.pos.y)
     
+    # collision avec un autre bloc
+    def resolve_collision(self, other):
+        """Calcule la force de collision entre deux blocs"""
+        if self.rect.colliderect(other.rect):
+            # Calcul de l'overlap (votre logique d'origine)
+            dx = self.rect.centerx - other.rect.centerx
+            dy = self.rect.centery - other.rect.centery
+            overlap_x = (self.size / 2 + other.size / 2) - abs(dx)
+            overlap_y = (self.size / 2 + other.size / 2) - abs(dy)
 
-    def detect_collision_blocks(self):
-        # Collision avec les autres blocs
-        for other in Block.block_list:
-            if other != self and self.block.colliderect(other.block):
-                self.switch_to(other)
-                other.switch_to(self)
+            # Définir la normale de collision (direction de la force)
+            if overlap_x < overlap_y:
+                normal = pygame.Vector2(1 if dx > 0 else -1, 0)
+                separation = overlap_x
+            else:
+                normal = pygame.Vector2(0, 1 if dy > 0 else -1)
+                separation = overlap_y
 
-                self.collide = True
-                other.collide = True
+            # Correction de position (Anti-glitch : on sépare les blocs)
+            self.pos += normal * (separation / 2)
+            other.pos -= normal * (separation / 2)
 
-                dx = (self.block.centerx - other.block.centerx)
-                dy = (self.block.centery - other.block.centery)
+            # Calcul du rebond vectoriel (Elastic Collision)
+            # On projette la vélocité relative sur la normale
+            relative_velocity = self.vel - other.vel
+            velocity_along_normal = relative_velocity.dot(normal)
 
-                overlap_x = (self.size[0] / 2 + other.size[0] / 2) - abs(dx)
-                overlap_y = (self.size[1] / 2 + other.size[1] / 2) - abs(dy)
+            # Si les blocs s'éloignent déjà, on ne fait rien
+            if velocity_along_normal > 0:
+                return False
 
-                if overlap_x < overlap_y:
-                    # Déplacer horizontalement pour ne plus être en contact
-                    if dx > 0:
-                        self.pos[0] += overlap_x
-                    else:
-                        self.pos[0] -= overlap_x
-                    self.velocity[0] = -self.velocity[0]
-                    
-                else:
-                    # Déplacer verticalement pour ne plus être en contact
-                    if dy > 0:
-                        self.pos[1] += overlap_y
-                    else:
-                        self.pos[1] -= overlap_y
-                    self.velocity[1] = -self.velocity[1]
+            # On applique l'impulsion (force de rebond)
+            # Pour des masses égales, on échange simplement les composantes le long de la normale
+            impulse = normal * velocity_along_normal
+            self.vel -= impulse
+            other.vel += impulse
+            
+            return True
+        return False
 
-                # Mettre à jour le rect après correction
-                self.block.topleft = self.pos
+    def collide_with_wall(self, wall_rect):
+        """Logique d'overlap corrigée pour murs longs/fins"""
+        if self.rect.colliderect(wall_rect):
+            # Calcul des distances entre les centres
+            dx = self.rect.centerx - wall_rect.centerx
+            dy = self.rect.centery - wall_rect.centery
+            
+            # Calcul des chevauchements réels
+            overlap_x = (self.rect.width / 2 + wall_rect.width / 2) - abs(dx)
+            overlap_y = (self.rect.height / 2 + wall_rect.height / 2) - abs(dy)
 
+            # On compare quel axe est le plus "petit" pour déterminer la face d'impact
+            # Si le mur est horizontal (très large), overlap_y sera le plus petit sur les faces haut/bas
+            if overlap_x < overlap_y:
+                # Collision Latérale (Gauche ou Droite du mur)
+                self.pos.x += overlap_x if dx > 0 else -overlap_x
+                self.vel.x *= -1
+            else:
+                # Collision Verticale (Haut ou Bas du mur)
+                self.pos.y += overlap_y if dy > 0 else -overlap_y
+                self.vel.y *= -1
+            
+            # Application immédiate de la correction de position
+            self.rect.topleft = (self.pos.x, self.pos.y)
 
-    def detect_collision(self, screen_size=[400, 400], wall={}):
-        self.detect_collision_field(screen_size)
-        self.detect_collision_wall(wall)
-        self.detect_collision_blocks()
+    def collide_with_block(self, other):
+        """Logique d'overlap pour les blocs"""
+        if self.rect.colliderect(other.rect):
+            dx = self.rect.centerx - other.rect.centerx
+            dy = self.rect.centery - other.rect.centery
+            overlap_x = (self.rect.width / 2 + other.rect.width / 2) - abs(dx)
+            overlap_y = (self.rect.height / 2 + other.rect.height / 2) - abs(dy)
 
-    def switch_to(self, other):
-        addition = self.type.value + other.type.value
-        # FIRE = 1
-        # PLANT = 2
-        # WATER = 4
-        match addition:
-            case 3:  # fire + plant
-                self.set_state("fire" if not Block.invert else "plant")
-                return
-            case 5:  # water + fire
-                self.set_state("water" if not Block.invert else "fire")
-                return
-            case 6:  # plant + water
-                self.set_state("plant" if not Block.invert else "water")
-                return
-            case _:  return
-        return
+            # Pour éviter que les blocs restent collés, on les sépare tous les deux
+            if overlap_x < overlap_y:
+                separation = overlap_x / 2
+                self.pos[0] += separation if dx > 0 else -separation
+                other.pos[0] -= separation if dx > 0 else -separation
+                self.velocity[0], other.velocity[0] = -self.velocity[0], -other.velocity[0]
+            else:
+                separation = overlap_y / 2
+                self.pos[1] += separation if dy > 0 else -separation
+                other.pos[1] -= separation if dy > 0 else -separation
+                self.velocity[1], other.velocity[1] = -self.velocity[1], -other.velocity[1]
+            
+            self.rect.topleft = self.pos
+            other.rect.topleft = other.pos
+            return True
+        return False
 
-    def set_state(self, type):
-        Block.sounds[type].play()
-        self.image = pygame.transform.smoothscale(Block.images[type], (self.size[0]+self.size[0]/5, self.size[1]+self.size[1]/5))
-        self.type = Type[type]
+    def change_type(self, new_type):
+        if self.type != new_type:
+            self.type = new_type
+            self.image = pygame.transform.smoothscale(ResourceManager.get_img(new_type), (self.size, self.size))
+            self.color = ELEMENT_RULES[new_type]["color"]
+            ResourceManager.play_sound(new_type)
 
-
-    def spawn_random_block( block_number, type, range_x=[0,100], range_y=[0,100], max_attempts=1000):
-    
-        size = random.randint(40, 70)
-
-        _width = size
-        _height = size
-
-        block_size = (size, size)
-
-        for _ in range(block_number):
-
-            size = random.randint(40, 70)
-            _width = size
-            _height = size
-            placed = False
-            attempts = 0
-
-            while not placed and attempts < max_attempts:
-                _pos_x = random.randint(int(range_x[0]), int(range_x[1] - _width))
-                _pos_y = random.randint(int(range_y[0]), int(range_y[1] - _height))
-                block = Block(_width, _height, _pos_x, _pos_y, type)
-
-                # Vérifier collisions
-                collision = False
-                for other in Block.block_list:
-                    if block.block.colliderect(other.block):
-                        collision = True
-                        break
-
-                if not collision:
-                    Block.block_list.append(block)
-                    placed = True  # bloc validé
-
-                attempts += 1
-
-            if not placed:
-                print(f"⚠️ Impossible de placer un bloc après {max_attempts} essais.")
-                break
-
-        return Block.block_list
-
+    def draw(self, surface):
+            if self.image:
+                surface.blit(self.image, self.rect)
+            else:
+                pygame.draw.rect(surface, self.color, self.rect)
