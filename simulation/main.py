@@ -44,7 +44,7 @@ def main():
         sim.blocks.append(Block(x, y, block_size, "blue"))
     #endregion
 
-    sim.implement_black_block(middle_x, wall_height_pos )
+    sim.implement_black_block(middle_x - 25, wall_height_pos - 20, 60)
 
     # Boucle principale
     running = True
@@ -55,9 +55,10 @@ def main():
                 running = False
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # Action : Supprimer les barrières au clic
-                sim.show_walls = False
-                print("Barrières supprimées ! Libérez les éléments !")
+                sim.walls.pop(0)
+                sim.walls.pop(0)
+
+                print("Barrières supprimées")
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_i: # Appuyer sur 'I' pour inverser les règles

@@ -2,6 +2,7 @@ import pygame
 import random
 from constants import ELEMENT_RULES
 from ResourceManager import ResourceManager
+from Wall import Wall
 
 class Block:
     def __init__(self, x, y, size, element_type):
@@ -47,7 +48,7 @@ class Block:
         self.rect.topleft = (self.pos.x, self.pos.y)
     
     # collision avec un autre bloc
-    def resolve_collision(self, other):
+    def resolve_collision(self, other: "Block"):
         """Calcule la force de collision entre deux blocs"""
         if self.rect.colliderect(other.rect):
             # Calcul de l'overlap (votre logique d'origine)
@@ -86,16 +87,18 @@ class Block:
             return True
         return False
 
-    def collide_with_wall(self, wall_rect):
+    def collide_with_wall(self, wall: Wall):
         """Logique d'overlap corrigée pour murs longs/fins"""
-        if self.rect.colliderect(wall_rect):
+        if (self.type == "black"):
+            return
+        if self.rect.colliderect(wall.rect):
             # Calcul des distances entre les centres
-            dx = self.rect.centerx - wall_rect.centerx
-            dy = self.rect.centery - wall_rect.centery
+            dx = self.rect.centerx - wall.rect.centerx
+            dy = self.rect.centery - wall.rect.centery
             
             # Calcul des chevauchements réels
-            overlap_x = (self.rect.width / 2 + wall_rect.width / 2) - abs(dx)
-            overlap_y = (self.rect.height / 2 + wall_rect.height / 2) - abs(dy)
+            overlap_x = (self.rect.width / 2 + wall.rect.width / 2) - abs(dx)
+            overlap_y = (self.rect.height / 2 + wall.rect.height / 2) - abs(dy)
 
             # On compare quel axe est le plus "petit" pour déterminer la face d'impact
             # Si le mur est horizontal (très large), overlap_y sera le plus petit sur les faces haut/bas
@@ -143,8 +146,8 @@ class Block:
             self.color = ELEMENT_RULES[new_type]["color"]
             ResourceManager.play_sound(new_type)
 
-    def draw(self, surface):
+    def draw(self, screen):
             if self.image:
-                surface.blit(self.image, self.rect)
+                screen.blit(self.image, self.rect)
             else:
-                pygame.draw.rect(surface, self.color, self.rect)
+                pygame.draw.rect(screen, self.color, self.rect)

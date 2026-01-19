@@ -2,6 +2,7 @@ import pygame
 import random
 from Block import Block
 from constants import CHUNK_SIZE, ELEMENT_RULES, COLOR_BG_TOP, COLOR_BG_BOTTOM
+from Wall import Wall
 
 class Simulation:
     def __init__(self, width, height):
@@ -9,11 +10,11 @@ class Simulation:
             self.rect = self.screen.get_rect()
             self.blocks = []
             self.walls = []
-            self.show_walls = True
             self.invert_mode = False
 
     def add_wall(self, x, y, w, h):
-        self.walls.append(pygame.Rect(x, y, w, h))
+        wall = Wall(x, y, w, h)
+        self.walls.append(wall)
 
     def remove_walls(self):
         """Vide la liste des murs"""
@@ -25,10 +26,15 @@ class Simulation:
             y = random.randint(zone_rect.top, zone_rect.bottom - 40)
             self.blocks.append(Block(x, y, size, element_type))
 
-    def implement_black_block(self, x, y):
-        self.blocks.append(Block(x, y, 40, 'black'))
-        return
+    def implement_black_block(self, x, y, size):
+        black_block = Block(x, y, size, 'black')
+        black_wall = Wall(x, y, size, size, visible=False)
+        
+        self.blocks.append(black_block)
+        self.walls.append(black_wall)
 
+        print("Bloc noir ajouté aux coordonnées :", black_block.pos.x, black_block.pos.y)
+        return
 
     def handle_interactions(self):
             """Optimisation par grille spatiale"""
@@ -80,6 +86,8 @@ class Simulation:
 
     def resolve_element_fight(self, b1, b2):
         if b1.type == b2.type: return
+        if b1.type == "black" or b2.type == "black": return
+
         winner = b1.type if ELEMENT_RULES[b1.type]["beats"] == b2.type else b2.type
         loser = b2.type if winner == b1.type else b1.type
         
@@ -100,20 +108,18 @@ class Simulation:
             for b in self.blocks:
                 b.move(self.rect)
 
-            # On gère les collisions avec les murs (si actifs)
-            if self.show_walls:
-                for b in self.blocks:
-                    for w in self.walls:
-                        b.collide_with_wall(w)
+            # On gère les collisions avec les murs
+            for b in self.blocks:
+                for w in self.walls:
+                    b.collide_with_wall(w)
 
             # Interactions entre blocs
             self.handle_interactions()
 
     def draw(self):
         self.draw_background()
-        if self.show_walls:
-            for w in self.walls:
-                pygame.draw.rect(self.screen, (20, 20, 20), w)
+        for w in self.walls:
+            w.draw(self.screen)
                 
         for b in self.blocks:
             b.draw(self.screen)
