@@ -6,7 +6,7 @@ from core.ResourceManager import ResourceManager
 class Wall :
     def __init__(self, x, y, w, h, image=None, collidable=True, visible=True):
         self.rect = pygame.Rect(x, y, w, h)
-        self.color = (100, 100, 100)  # Gris par défaut
+        self.color = (50, 50, 50)  # Gris par défaut
         self.image = image
         self.visible = visible
         self.collidable = collidable

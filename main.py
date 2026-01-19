@@ -21,8 +21,8 @@ def main():
     sim.add_wall(0, wall_height_pos, SCREEN_WIDTH, 10)         # Mur horizontal
     sim.add_wall(middle_x, wall_height_pos, 10, SCREEN_HEIGHT) # Mur vertical bas
 
-    block_number = 30
-    block_size = 20
+    block_number = 7
+    block_size = 30
 
     #region Spawn des blocs par zones
     # Zone 1 : Haut (Feu)
@@ -46,6 +46,14 @@ def main():
 
     sim.implement_black_block(middle_x - 25, wall_height_pos - 20, 60)
 
+    TIMER_EVENT = pygame.USEREVENT + 1
+    pygame.time.set_timer(TIMER_EVENT, 1000)
+    time_left = 3  # Start with 60 seconds
+
+    running = True
+
+    start_wall = True
+
     # Boucle principale
     running = True
     while running:
@@ -54,7 +62,8 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and start_wall:
+                start_wall = False
                 sim.walls.pop(0)
                 sim.walls.pop(0)
 
@@ -64,6 +73,15 @@ def main():
                 if event.key == pygame.K_i: # Appuyer sur 'I' pour inverser les règles
                     sim.invert_mode = not sim.invert_mode
                     print(f"Mode Inversé : {sim.invert_mode}")
+            
+            if event.type == TIMER_EVENT and not start_wall:
+                if time_left > 0:
+                    print(f"Time left: {time_left} seconds")
+                    time_left -= 1
+                else:
+                    sim.black_block_effect()
+                    time_left = 3  # Reset timer
+                    print("Time's up!")
 
         # --- Mise à jour de la physique et des règles ---
         sim.update()

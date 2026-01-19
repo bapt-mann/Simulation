@@ -1,7 +1,7 @@
 import pygame
 import random
 from core.Block import Block
-from constants import CHUNK_SIZE, ELEMENT_RULES, COLOR_BG_TOP, COLOR_BG_BOTTOM
+from constants import CHUNK_SIZE, DETECTION_RADIUS, ELEMENT_RULES, COLOR_BG_TOP, COLOR_BG_BOTTOM
 from core.Wall import Wall
 
 class Simulation:
@@ -11,6 +11,7 @@ class Simulation:
             self.blocks = []
             self.walls = []
             self.invert_mode = False
+            self.grid = {}  # Grille spatiale pour l'optimisation des collisions
 
     def add_wall(self, x, y, w, h):
         wall = Wall(x, y, w, h)
@@ -28,46 +29,51 @@ class Simulation:
 
     def implement_black_block(self, x, y, size):
         black_block = Block(x, y, size, 'black')
-        black_wall = Wall(x, y, size, size, visible=False)
-        
         self.blocks.append(black_block)
-        self.walls.append(black_wall)
 
         print("Bloc noir ajouté aux coordonnées :", black_block.pos.x, black_block.pos.y)
         return
 
-    def handle_interactions(self):
-            """Optimisation par grille spatiale"""
-            # Créer la grille (Dictionnaire de listes)
-            # Clé : (grid_x, grid_y) -> Valeur : [liste des blocs dans cette cellule]
-            grid = {}
-
-            for b in self.blocks:
-                # Calculer dans quelle cellule se trouve le centre du bloc
-                cx = int(b.rect.centerx // CHUNK_SIZE)
-                cy = int(b.rect.centery // CHUNK_SIZE)
-                key = (cx, cy)
+    def black_block_effect(self):
+        """Déclenche la contamination ET l'effet visuel"""
+        for b in self.blocks:
+            if b.type == "black":
+                b.emit_wave() # Déclenche l'onde visuelle
                 
-                if key not in grid:
-                    grid[key] = []
-                grid[key].append(b)
+                # Logique de contamination (votre rayon autour du bloc)
+                for other in self.blocks:
+                    if other.type != "black":
+                        dist = b.pos.distance_to(other.pos)
+                        if dist < b.contamination_radius:
+                            other.change_type("black")
 
-            # Vérifier les collisions uniquement dans la même cellule et les voisines
-            # On utilise un set pour éviter de tester deux fois la même paire
-            checked_pairs = set()
+    def handle_interactions(self):
+        """Optimisation par grille spatiale avec nettoyage"""
+        # On vide la grille à chaque frame pour éviter la fuite de mémoire
+        self.grid = {} 
+        
+        for b in self.blocks:
+            # Calcul de la cellule (Chunk)
+            cx = int(b.rect.centerx // CHUNK_SIZE)
+            cy = int(b.rect.centery // CHUNK_SIZE)
+            b.key = (cx, cy)
 
-            for (cx, cy), blocks_in_cell in grid.items():
-                # Cellules à vérifier : elle-même + les 8 voisines (ou juste 4 pour éviter les doublons)
-                for dx in range(-1, 2):
-                    for dy in range(-1, 2):
-                        neighbor_key = (cx + dx, cy + dy)
-                        
-                        if neighbor_key in grid:
-                            self.check_collision_between_lists(
-                                blocks_in_cell, 
-                                grid[neighbor_key], 
-                                checked_pairs
-                            )
+            if b.key not in self.grid:
+                self.grid[b.key] = []
+            self.grid[b.key].append(b)
+
+        # Gestion des collisions par paires uniques
+        checked_pairs = set()
+        for (cx, cy), blocks_in_cell in self.grid.items():
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    neighbor_key = (cx + dx, cy + dy)
+                    if neighbor_key in self.grid:
+                        self.check_collision_between_lists(
+                            blocks_in_cell, 
+                            self.grid[neighbor_key], 
+                            checked_pairs
+                        )
 
     def check_collision_between_lists(self, list_a, list_b, checked_pairs):
         """Compare les collisions entre deux listes de blocs"""
@@ -83,6 +89,53 @@ class Simulation:
                     # On utilise ta nouvelle logique vectorielle
                     if b1.resolve_collision(b2):
                         self.resolve_element_fight(b1, b2)
+
+    def handle_ai(self):
+        """Chaque bloc cherche sa proie et fuit son prédateur via les chunks"""
+        for b in self.blocks:
+            if b.type == "black": continue # Les blocs noirs ne réfléchissent pas
+
+            closest_prey = None
+            closest_predator = None
+            min_dist_prey = DETECTION_RADIUS
+            min_dist_pred = DETECTION_RADIUS
+
+            # On cherche dans les chunks voisins
+            cx, cy = b.key
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    neighbor_key = (cx + dx, cy + dy)
+                    if neighbor_key in self.grid:
+                        for other in self.grid[neighbor_key]:
+                            if other == b: continue
+                            
+                            dist = b.pos.distance_to(other.pos)
+                            if dist < DETECTION_RADIUS:
+                                # Qui est mon prédateur
+                                if b.type == ELEMENT_RULES[other.type]["beats"]:
+                                    if dist < min_dist_pred:
+                                        min_dist_pred = dist
+                                        closest_predator = other.pos
+                                # Qui est ma proie
+                                elif other.type == ELEMENT_RULES[b.type]["beats"]:
+                                    if dist < min_dist_prey:
+                                        min_dist_prey = dist
+                                        closest_prey = other.pos
+                                # black
+                                if b.type == "black":
+                                    if dist < min_dist_pred:
+                                        min_dist_pred = dist
+                                        closest_predator = other.pos
+
+            # Application des forces
+            if closest_predator:
+                b.apply_force(b.flee(closest_predator) * 1.5) # Fuite Prioritaire
+            elif closest_prey:
+                b.apply_force(b.seek(closest_prey))
+            else:
+                # Comportement de vagabondage (si rien aux alentours)
+                wander_force = pygame.Vector2(random.uniform(-0.1, 0.1), random.uniform(-0.1, 0.1))
+                b.apply_force(wander_force)
 
     def resolve_element_fight(self, b1, b2):
         if b1.type == b2.type: return
@@ -104,9 +157,11 @@ class Simulation:
             pygame.draw.line(self.screen, (r, g, b), (0, y), (self.rect.width, y))
 
     def update(self):
+            self.handle_ai()
             # Mouvement
             for b in self.blocks:
                 b.move(self.rect)
+                b.update_visuals()
 
             # On gère les collisions avec les murs
             for b in self.blocks:

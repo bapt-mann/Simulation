@@ -1,6 +1,7 @@
 import pygame
 import random
-from constants import ELEMENT_RULES
+from constants import ELEMENT_RULES, MAX_FORCE, MAX_SPEED
+from core.ContaminationWave import ContaminationWave
 from core.ResourceManager import ResourceManager
 from core.Wall import Wall
 
@@ -8,21 +9,47 @@ class Block:
     def __init__(self, x, y, size, element_type):
         # Utilisation de Vector2 pour la position et la vélocité
         self.pos = pygame.Vector2(x, y)
-        self.vel = pygame.Vector2(
-            random.uniform(1, 3) * random.choice([-1, 1]),
-            random.uniform(1, 3) * random.choice([-1, 1])
-        )
+        self.vel = pygame.Vector2(0, 0) # On commence à l'arrêt
+        self.acc = pygame.Vector2(0, 0) # Accélération (force cumulée)
+        self.key = (0, 0)  # Clé de la grille spatiale
+
         self.size = size
         self.rect = pygame.Rect(x, y, size, size)
         self.type = element_type
         self.image = pygame.transform.smoothscale(ResourceManager.get_img(element_type), (size, size))
         self.color = ELEMENT_RULES[element_type]["color"]
+        self.waves = []
+        self.contamination_radius = 50
+
+    def apply_force(self, force: pygame.Vector2):
+        self.acc += force
+
+    def seek(self, target_pos: pygame.Vector2):
+        """Calcule une force vers une cible"""
+        desired = (target_pos - self.pos)
+        if desired.length() > 0:
+            desired = desired.normalize() * MAX_SPEED
+            steer = desired - self.vel
+            if steer.length() > MAX_FORCE:
+                steer.scale_to_length(MAX_FORCE)
+            return steer
+        return pygame.Vector2(0, 0)
+
+    def flee(self, predator_pos: pygame.Vector2):
+        """Calcule une force à l'opposé d'un prédateur"""
+        return -self.seek(predator_pos)
 
     def move(self, screen_rect):
         if self.type == "black":
             return  # Le bloc noir ne bouge pas
 
+        # Application de l'accélération
+        self.vel += self.acc
+        if self.vel.length() > MAX_SPEED:
+            self.vel.scale_to_length(MAX_SPEED)
+        
         self.pos += self.vel
+        self.acc *= 0 # Réinitialise l'accélération à chaque frame
         
         # Synchronisation du rect avant les tests
         self.rect.topleft = (self.pos.x, self.pos.y)
@@ -65,24 +92,38 @@ class Block:
                 normal = pygame.Vector2(0, 1 if dy > 0 else -1)
                 separation = overlap_y
 
-            # Correction de position (Anti-glitch : on sépare les blocs)
-            self.pos += normal * (separation / 2)
-            other.pos -= normal * (separation / 2)
+            if other.type == "black":
+                # Le bloc noir ne bouge pas : on repousse 'self' de TOUTE la distance
+                self.pos += normal * separation
+                # On reflète la vélocité par rapport à la normale pour un rebond parfait
+                self.vel = self.vel.reflect(normal)
+            elif self.type == "black":
+                # Cas inverse (peu probable si black est immobile, mais utile pour la solidité)
+                other.pos -= normal * separation
+                other.vel = other.vel.reflect(normal)
+            else:
+                # Collision normale entre deux blocs mobiles : on partage la séparation
+                self.pos += normal * (separation / 2)
+                other.pos -= normal * (separation / 2)
 
-            # Calcul du rebond vectoriel (Elastic Collision)
-            # On projette la vélocité relative sur la normale
-            relative_velocity = self.vel - other.vel
-            velocity_along_normal = relative_velocity.dot(normal)
+                # Correction de position (Anti-glitch : on sépare les blocs)
+                self.pos += normal * (separation / 2)
+                other.pos -= normal * (separation / 2)
 
-            # Si les blocs s'éloignent déjà, on ne fait rien
-            if velocity_along_normal > 0:
-                return False
+                # Calcul du rebond vectoriel (Elastic Collision)
+                # On projette la vélocité relative sur la normale
+                relative_velocity = self.vel - other.vel
+                velocity_along_normal = relative_velocity.dot(normal)
 
-            # On applique l'impulsion (force de rebond)
-            # Pour des masses égales, on échange simplement les composantes le long de la normale
-            impulse = normal * velocity_along_normal
-            self.vel -= impulse
-            other.vel += impulse
+                # Si les blocs s'éloignent déjà, on ne fait rien
+                if velocity_along_normal > 0:
+                    return False
+
+                # On applique l'impulsion (force de rebond)
+                # Pour des masses égales, on échange simplement les composantes le long de la normale
+                impulse = normal * velocity_along_normal
+                self.vel -= impulse
+                other.vel += impulse
             
             return True
         return False
@@ -146,8 +187,28 @@ class Block:
             self.color = ELEMENT_RULES[new_type]["color"]
             ResourceManager.play_sound(new_type)
 
+    def emit_wave(self):
+        """Crée une nouvelle onde au centre du bloc"""
+        if self.type == "black" and len(self.waves) < 3: # Max 3 ondes simultanées
+            self.waves.append(ContaminationWave(self.rect.centerx, self.rect.centery, self.contamination_radius))
+
+    def update_visuals(self):
+        """Met à jour toutes les ondes actives"""
+        for w in self.waves[:]:
+            if not w.update():
+                self.waves.remove(w)
+
     def draw(self, screen):
-            if self.image:
-                screen.blit(self.image, self.rect)
-            else:
-                pygame.draw.rect(screen, self.color, self.rect)
+        if self.type == "black":
+            # On dessine un disque très léger pour montrer la portée
+            zone_surface = pygame.Surface((self.contamination_radius * 2, self.contamination_radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(zone_surface, (0, 0, 0, 30), (self.contamination_radius, self.contamination_radius), self.contamination_radius)
+            screen.blit(zone_surface, (self.rect.centerx - self.contamination_radius, self.rect.centery - self.contamination_radius))
+
+        for w in self.waves:
+            w.draw(screen)
+        
+        if self.image:
+            screen.blit(self.image, self.rect)
+        else:
+            pygame.draw.rect(screen, self.color, self.rect)
