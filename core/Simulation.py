@@ -1,8 +1,8 @@
 import pygame
 import random
-from Block import Block
+from core.Block import Block
 from constants import CHUNK_SIZE, ELEMENT_RULES, COLOR_BG_TOP, COLOR_BG_BOTTOM
-from Wall import Wall
+from core.Wall import Wall
 
 class Simulation:
     def __init__(self, width, height):

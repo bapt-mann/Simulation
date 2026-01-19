@@ -8,8 +8,9 @@ class ResourceManager:
     @classmethod
     def load(cls, element_types, size):
         base_path = os.path.dirname(__file__)
-        img_dir = os.path.join(base_path, "assets", "images")
-        snd_dir = os.path.join(base_path, "assets", "sounds")
+        print(base_path)
+        img_dir = os.path.join(base_path, "../assets", "images")
+        snd_dir = os.path.join(base_path, "../assets", "sounds")
 
         for name in element_types:
             # Chargement Image

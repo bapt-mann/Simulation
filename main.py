@@ -1,9 +1,9 @@
 import pygame
 import random
 from constants import *
-from ResourceManager import ResourceManager
-from Simulation import Simulation
-from Block import Block
+from core.ResourceManager import ResourceManager
+from core.Simulation import Simulation
+from core.Block import Block
 
 def main():
     pygame.init()

@@ -1,8 +1,8 @@
 import pygame
 import random
 from constants import ELEMENT_RULES
-from ResourceManager import ResourceManager
-from Wall import Wall
+from core.ResourceManager import ResourceManager
+from core.Wall import Wall
 
 class Block:
     def __init__(self, x, y, size, element_type):

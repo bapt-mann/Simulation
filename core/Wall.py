@@ -1,7 +1,7 @@
 import pygame
 import random
 from constants import ELEMENT_RULES
-from ResourceManager import ResourceManager
+from core.ResourceManager import ResourceManager
 
 class Wall :
     def __init__(self, x, y, w, h, image=None, collidable=True, visible=True):
