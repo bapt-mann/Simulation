@@ -39,10 +39,10 @@ class Block:
         """Calcule une force à l'opposé d'un prédateur"""
         return -self.seek(predator_pos)
 
-    def move(self, screen_rect):
-        if self.type == "black":
+    def move(self, screen_rect, black_block = False):
+        if black_block==False and self.type == "black":
             return  # Le bloc noir ne bouge pas
-
+        
         # Application de l'accélération
         self.vel += self.acc
         if self.vel.length() > MAX_SPEED:
@@ -50,7 +50,6 @@ class Block:
         
         self.pos += self.vel
         self.acc *= 0 # Réinitialise l'accélération à chaque frame
-        
         # Synchronisation du rect avant les tests
         self.rect.topleft = (self.pos.x, self.pos.y)
 
@@ -92,12 +91,12 @@ class Block:
                 normal = pygame.Vector2(0, 1 if dy > 0 else -1)
                 separation = overlap_y
 
-            if other.type == "black":
+            if other.type == "otherType":
                 # Le bloc noir ne bouge pas : on repousse 'self' de TOUTE la distance
                 self.pos += normal * separation
                 # On reflète la vélocité par rapport à la normale pour un rebond parfait
                 self.vel = self.vel.reflect(normal)
-            elif self.type == "black":
+            elif self.type == "otherType":
                 # Cas inverse (peu probable si black est immobile, mais utile pour la solidité)
                 other.pos -= normal * separation
                 other.vel = other.vel.reflect(normal)
@@ -130,8 +129,6 @@ class Block:
 
     def collide_with_wall(self, wall: Wall):
         """Logique d'overlap corrigée pour murs longs/fins"""
-        if (self.type == "black"):
-            return
         if self.rect.colliderect(wall.rect):
             # Calcul des distances entre les centres
             dx = self.rect.centerx - wall.rect.centerx
@@ -199,12 +196,6 @@ class Block:
                 self.waves.remove(w)
 
     def draw(self, screen):
-        if self.type == "black":
-            # On dessine un disque très léger pour montrer la portée
-            zone_surface = pygame.Surface((self.contamination_radius * 2, self.contamination_radius * 2), pygame.SRCALPHA)
-            pygame.draw.circle(zone_surface, (0, 0, 0, 30), (self.contamination_radius, self.contamination_radius), self.contamination_radius)
-            screen.blit(zone_surface, (self.rect.centerx - self.contamination_radius, self.rect.centery - self.contamination_radius))
-
         for w in self.waves:
             w.draw(screen)
         

@@ -1,7 +1,7 @@
 import pygame
 import random
 from core.Block import Block
-from constants import CHUNK_SIZE, DETECTION_RADIUS, ELEMENT_RULES, COLOR_BG_TOP, COLOR_BG_BOTTOM
+from constants import CHUNK_SIZE, DETECTION_RADIUS, ELEMENT_RULES, COLOR_BG_TOP, COLOR_BG_BOTTOM, MAX_FORCE
 from core.Wall import Wall
 
 class Simulation:
@@ -12,6 +12,7 @@ class Simulation:
             self.walls = []
             self.invert_mode = False
             self.grid = {}  # Grille spatiale pour l'optimisation des collisions
+            self.start_wall = False
 
     def add_wall(self, x, y, w, h):
         wall = Wall(x, y, w, h)
@@ -30,7 +31,6 @@ class Simulation:
     def implement_black_block(self, x, y, size):
         black_block = Block(x, y, size, 'black')
         self.blocks.append(black_block)
-
         print("Bloc noir ajouté aux coordonnées :", black_block.pos.x, black_block.pos.y)
         return
 
@@ -91,16 +91,24 @@ class Simulation:
                         self.resolve_element_fight(b1, b2)
 
     def handle_ai(self):
-        """Chaque bloc cherche sa proie et fuit son prédateur via les chunks"""
+        """Sépare le mouvement aléatoire du noir de la fuite des autres blocs"""
         for b in self.blocks:
-            if b.type == "black": continue # Les blocs noirs ne réfléchissent pas
+            # CAS 1 : LE BLOC NOIR (Mouvement aléatoire)
+            if b.type == "black":
+                # On applique une force aléatoire pour simuler l'ancien déplacement erratique
+                # mais de façon fluide avec les vecteurs
+                wander_force = pygame.Vector2(
+                    random.uniform(-MAX_FORCE, MAX_FORCE), 
+                    random.uniform(-MAX_FORCE, MAX_FORCE)
+                )
+                b.apply_force(wander_force)
+                continue # On passe au bloc suivant, pas besoin de chercher de proies
 
-            closest_prey = None
-            closest_predator = None
-            min_dist_prey = DETECTION_RADIUS
-            min_dist_pred = DETECTION_RADIUS
+            # CAS 2 : LES AUTRES BLOCS (Intelligence de fuite)
+            closest_danger = None
+            min_dist = DETECTION_RADIUS
 
-            # On cherche dans les chunks voisins
+            # Utilisation des chunks pour optimiser la recherche
             cx, cy = b.key
             for dx in range(-1, 2):
                 for dy in range(-1, 2):
@@ -110,36 +118,28 @@ class Simulation:
                             if other == b: continue
                             
                             dist = b.pos.distance_to(other.pos)
-                            if dist < DETECTION_RADIUS:
-                                # Qui est mon prédateur
-                                if b.type == ELEMENT_RULES[other.type]["beats"]:
-                                    if dist < min_dist_pred:
-                                        min_dist_pred = dist
-                                        closest_predator = other.pos
-                                # Qui est ma proie
-                                elif other.type == ELEMENT_RULES[b.type]["beats"]:
-                                    if dist < min_dist_prey:
-                                        min_dist_prey = dist
-                                        closest_prey = other.pos
-                                # black
-                                if b.type == "black":
-                                    if dist < min_dist_pred:
-                                        min_dist_pred = dist
-                                        closest_predator = other.pos
+                            if dist < min_dist:
+                                # PRIORITÉ 1 : Le bloc noir est le danger suprême
+                                if other.type == "black":
+                                    closest_danger = other.pos
+                                    min_dist = dist
+                                # PRIORITÉ 2 : Le prédateur naturel (si pas de noir à proximité)
+                                elif closest_danger is None and b.type == ELEMENT_RULES[other.type]["beats"]:
+                                    closest_danger = other.pos
+                                    min_dist = dist
 
-            # Application des forces
-            if closest_predator:
-                b.apply_force(b.flee(closest_predator) * 1.5) # Fuite Prioritaire
-            elif closest_prey:
-                b.apply_force(b.seek(closest_prey))
-            else:
-                # Comportement de vagabondage (si rien aux alentours)
-                wander_force = pygame.Vector2(random.uniform(-0.1, 0.1), random.uniform(-0.1, 0.1))
-                b.apply_force(wander_force)
+            # Application de la fuite si un danger est détecté
+            if closest_danger:
+                # On fuit le bloc noir ou le prédateur
+                b.apply_force(b.flee(closest_danger) * 2.0) 
 
-    def resolve_element_fight(self, b1, b2):
+
+    def resolve_element_fight(self, b1 :Block, b2: Block):
         if b1.type == b2.type: return
-        if b1.type == "black" or b2.type == "black": return
+        if b1.type == "black" or b2.type == "black": 
+            b1.change_type("black")
+            b2.change_type("black")
+            return
 
         winner = b1.type if ELEMENT_RULES[b1.type]["beats"] == b2.type else b2.type
         loser = b2.type if winner == b1.type else b1.type
@@ -160,7 +160,7 @@ class Simulation:
             self.handle_ai()
             # Mouvement
             for b in self.blocks:
-                b.move(self.rect)
+                b.move(self.rect, True if not self.start_wall else False)
                 b.update_visuals()
 
             # On gère les collisions avec les murs

@@ -1,7 +1,8 @@
 import pygame
 
 # Configuration Écran
-SCREEN_WIDTH, SCREEN_HEIGHT = 540, 960
+# 1920x1080 pour écran plein, 540x960 pour fenêtre
+SCREEN_WIDTH, SCREEN_HEIGHT = 960, 540
 FPS = 60
 CHUNK_SIZE = 80
 
@@ -19,5 +20,5 @@ ELEMENT_RULES = {
     "red":  {"color": (255, 50, 50), "beats": "green"},
     "green": {"color": (50, 255, 50), "beats": "blue"},
     "blue": {"color": (50, 50, 255), "beats": "red"},
-    "black": {"color": (20, 20, 20), "beats": None}  # Bloc noir neutre
+    "black": {"color": (0, 0, 0), "beats": "red", "beats": "green", "beats": "blue"} # bat tout le monde
 }
