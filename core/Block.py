@@ -2,7 +2,7 @@ import pygame
 import random
 from constants import ELEMENT_RULES, MAX_FORCE, MAX_SPEED
 from core.ContaminationWave import ContaminationWave
-from core.ResourceManager import ResourceManager
+from core.managers.ResourceManager import ResourceManager
 from core.Wall import Wall
 
 class Block:

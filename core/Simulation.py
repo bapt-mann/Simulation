@@ -3,6 +3,7 @@ import random
 from core.Block import Block
 from constants import CHUNK_SIZE, DETECTION_RADIUS, ELEMENT_RULES, COLOR_BG_TOP, COLOR_BG_BOTTOM, MAX_FORCE
 from core.Wall import Wall
+from core.managers.AiManager import AiManager
 
 class Simulation:
     def __init__(self, width, height):
@@ -13,6 +14,8 @@ class Simulation:
             self.invert_mode = False
             self.grid = {}  # Grille spatiale pour l'optimisation des collisions
             self.start_wall = False
+            self.black_blocks = []
+            self.max_black_blocks = 600
 
     def add_wall(self, x, y, w, h):
         wall = Wall(x, y, w, h)
@@ -31,21 +34,27 @@ class Simulation:
     def implement_black_block(self, x, y, size):
         black_block = Block(x, y, size, 'black')
         self.blocks.append(black_block)
+        self.black_blocks.append(black_block)
         print("Bloc noir ajouté aux coordonnées :", black_block.pos.x, black_block.pos.y)
         return
 
-    def black_block_effect(self):
-        """Déclenche la contamination ET l'effet visuel"""
-        for b in self.blocks:
-            if b.type == "black":
-                b.emit_wave() # Déclenche l'onde visuelle
-                
-                # Logique de contamination (votre rayon autour du bloc)
-                for other in self.blocks:
-                    if other.type != "black":
-                        dist = b.pos.distance_to(other.pos)
-                        if dist < b.contamination_radius:
-                            other.change_type("black")
+    def infect_to_black(self, target_block):
+        """Transforme un bloc en noir et gère la limite de 20"""
+        if target_block.type == "black":
+            return
+
+        # On mémorise son type actuel pour la retransformation future
+        old_type = target_block.type
+        
+        # Transformation du nouveau bloc
+        target_block.change_type("black")
+        self.black_blocks.append(target_block)
+
+        # Si on dépasse la limite, on transforme le plus ancien
+        if len(self.black_blocks) > self.max_black_blocks:
+            oldest_black = self.black_blocks.pop(0)
+            # On le retransforme dans le type du bloc qui vient d'être infecté
+            oldest_black.change_type(old_type)
 
     def handle_interactions(self):
         """Optimisation par grille spatiale avec nettoyage"""
@@ -90,57 +99,18 @@ class Simulation:
                     if b1.resolve_collision(b2):
                         self.resolve_element_fight(b1, b2)
 
-    def handle_ai(self):
-        """Sépare le mouvement aléatoire du noir de la fuite des autres blocs"""
-        for b in self.blocks:
-            # CAS 1 : LE BLOC NOIR (Mouvement aléatoire)
-            if b.type == "black":
-                # On applique une force aléatoire pour simuler l'ancien déplacement erratique
-                # mais de façon fluide avec les vecteurs
-                wander_force = pygame.Vector2(
-                    random.uniform(-MAX_FORCE, MAX_FORCE), 
-                    random.uniform(-MAX_FORCE, MAX_FORCE)
-                )
-                b.apply_force(wander_force)
-                continue # On passe au bloc suivant, pas besoin de chercher de proies
-
-            # CAS 2 : LES AUTRES BLOCS (Intelligence de fuite)
-            closest_danger = None
-            min_dist = DETECTION_RADIUS
-
-            # Utilisation des chunks pour optimiser la recherche
-            cx, cy = b.key
-            for dx in range(-1, 2):
-                for dy in range(-1, 2):
-                    neighbor_key = (cx + dx, cy + dy)
-                    if neighbor_key in self.grid:
-                        for other in self.grid[neighbor_key]:
-                            if other == b: continue
-                            
-                            dist = b.pos.distance_to(other.pos)
-                            if dist < min_dist:
-                                # PRIORITÉ 1 : Le bloc noir est le danger suprême
-                                if other.type == "black":
-                                    closest_danger = other.pos
-                                    min_dist = dist
-                                # PRIORITÉ 2 : Le prédateur naturel (si pas de noir à proximité)
-                                elif closest_danger is None and b.type == ELEMENT_RULES[other.type]["beats"]:
-                                    closest_danger = other.pos
-                                    min_dist = dist
-
-            # Application de la fuite si un danger est détecté
-            if closest_danger:
-                # On fuit le bloc noir ou le prédateur
-                b.apply_force(b.flee(closest_danger) * 2.0) 
-
-
     def resolve_element_fight(self, b1 :Block, b2: Block):
-        if b1.type == b2.type: return
-        if b1.type == "black" or b2.type == "black": 
-            b1.change_type("black")
-            b2.change_type("black")
+        if b1.type == b2.type: 
             return
-
+            
+        # Si l'un des deux est noir, l'autre est infecté
+        if b1.type == "black":
+            self.infect_to_black(b2)
+            return
+        if b2.type == "black":
+            self.infect_to_black(b1)
+            return
+        
         winner = b1.type if ELEMENT_RULES[b1.type]["beats"] == b2.type else b2.type
         loser = b2.type if winner == b1.type else b1.type
         
@@ -157,7 +127,7 @@ class Simulation:
             pygame.draw.line(self.screen, (r, g, b), (0, y), (self.rect.width, y))
 
     def update(self):
-            self.handle_ai()
+            AiManager.manage_block_ai(self)
             # Mouvement
             for b in self.blocks:
                 b.move(self.rect, True if not self.start_wall else False)

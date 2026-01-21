@@ -1,7 +1,7 @@
 import pygame
 import random
 from constants import *
-from core.ResourceManager import ResourceManager
+from core.managers.ResourceManager import ResourceManager
 from core.Simulation import Simulation
 from core.Block import Block
 
@@ -25,19 +25,16 @@ def main():
     block_size = 10
 
     #region Spawn des blocs par zones
-    # Zone 1 : Haut (Feu)
     for _ in range(block_number):
         x = random.randint(20, SCREEN_WIDTH - 60)
         y = random.randint(20, wall_height_pos - 60)
         sim.blocks.append(Block(x, y, block_size, "red"))
 
-    # Zone 2 : Bas Gauche (Plante)
     for _ in range(block_number):
         x = random.randint(20, middle_x - 60)
         y = random.randint(wall_height_pos + 20, SCREEN_HEIGHT - 60)
         sim.blocks.append(Block(x, y, block_size, "green"))
 
-    # Zone 3 : Bas Droite (Eau)
     for _ in range(block_number):
         x = random.randint(middle_x + 20, SCREEN_WIDTH - 60)
         y = random.randint(wall_height_pos + 20, SCREEN_HEIGHT - 60)
