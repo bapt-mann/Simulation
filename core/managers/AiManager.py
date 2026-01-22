@@ -11,7 +11,13 @@ class AiManager:
                         random.uniform(-MAX_FORCE, MAX_FORCE)
                     )
         block.apply_force(wander_force)
+        
+    @staticmethod
+    def following_block_ai(block, target_block):
+        """Fait suivre un autre bloc au bloc."""
+        block.apply_force(block.seek(target_block.pos))
 
+    @staticmethod
     def flee_block_ai(block, simulation):
         closest_danger = None
         min_dist = DETECTION_RADIUS
@@ -43,6 +49,7 @@ class AiManager:
             return True
         return False
 
+    @staticmethod
     def pursue_block_ai(block, simulation):
         closest_prey = None
         min_dist = DETECTION_RADIUS
@@ -77,7 +84,10 @@ class AiManager:
                 AiManager.wandering_block_ai(b)
                 continue
             if b.type == "black":
-                AiManager.wandering_block_ai(b)
+                if simulation.first_black_block == b :
+                    AiManager.pursue_block_ai(b, simulation)
+                else:
+                    AiManager.following_block_ai(b, simulation.first_black_block)
                 continue
             # CAS 1 : FUIR LES DANGERS
             if AiManager.flee_block_ai(b, simulation):

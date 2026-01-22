@@ -14,8 +14,9 @@ class Simulation:
             self.invert_mode = False
             self.grid = {}  # Grille spatiale pour l'optimisation des collisions
             self.start_wall = False
+
             self.black_blocks = []
-            self.max_black_blocks = 600
+            self.max_black_blocks = 50
 
     def add_wall(self, x, y, w, h):
         wall = Wall(x, y, w, h)
@@ -32,29 +33,23 @@ class Simulation:
             self.blocks.append(Block(x, y, size, element_type))
 
     def implement_black_block(self, x, y, size):
-        black_block = Block(x, y, size, 'black')
-        self.blocks.append(black_block)
-        self.black_blocks.append(black_block)
-        print("Bloc noir ajouté aux coordonnées :", black_block.pos.x, black_block.pos.y)
+        self.first_black_block = Block(x, y, size, 'black')
+        self.blocks.append(self.first_black_block)
+        print("Bloc noir ajouté aux coordonnées :", self.first_black_block.pos.x, self.first_black_block.pos.y)
         return
 
     def infect_to_black(self, target_block):
         """Transforme un bloc en noir et gère la limite de 20"""
         if target_block.type == "black":
             return
-
-        # On mémorise son type actuel pour la retransformation future
-        old_type = target_block.type
         
         # Transformation du nouveau bloc
         target_block.change_type("black")
         self.black_blocks.append(target_block)
 
-        # Si on dépasse la limite, on transforme le plus ancien
+        # Si on dépasse la limite, détruit le bloc touché
         if len(self.black_blocks) > self.max_black_blocks:
-            oldest_black = self.black_blocks.pop(0)
-            # On le retransforme dans le type du bloc qui vient d'être infecté
-            oldest_black.change_type(old_type)
+            self.blocks.remove(self.black_blocks[len(self.black_blocks) - 1])
 
     def handle_interactions(self):
         """Optimisation par grille spatiale avec nettoyage"""
