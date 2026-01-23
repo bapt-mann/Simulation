@@ -3,11 +3,11 @@ import pygame
 # Configuration Écran
 # 1920x1080 pour écran plein, 540x960 pour fenêtre
 SCREEN_WIDTH, SCREEN_HEIGHT = 960, 540
-FPS = 60
+FPS = 30
 CHUNK_SIZE = 80
 
-MAX_SPEED = 10    # Vitesse maximale du bloc 3.5
-MAX_FORCE = 3      # Capacité de virage (plus c'est haut, plus c'est agile) 0.2
+MAX_SPEED = 1    # Vitesse maximale du bloc 3.5
+MAX_FORCE = 0.15     # Capacité de virage (plus c'est haut, plus c'est agile) 0.2
 DETECTION_RADIUS = 150 # Distance à laquelle un bloc repère une proie/un prédateur
 
 # Couleurs (Thème sombre)

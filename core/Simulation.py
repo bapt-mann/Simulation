@@ -7,6 +7,7 @@ from core.managers.AiManager import AiManager
 
 class Simulation:
     def __init__(self, width, height):
+            self.dt = 0
             self.screen = pygame.display.set_mode((width, height))
             self.rect = self.screen.get_rect()
             self.blocks = []
@@ -125,7 +126,7 @@ class Simulation:
             AiManager.manage_block_ai(self)
             # Mouvement
             for b in self.blocks:
-                b.move(self.rect, True if not self.start_wall else False)
+                b.move(self.rect, self.dt, True if not self.start_wall else False)
                 b.update_visuals()
 
             # On gère les collisions avec les murs

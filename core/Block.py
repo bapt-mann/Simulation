@@ -19,6 +19,7 @@ class Block:
         self.image = pygame.transform.smoothscale(ResourceManager.get_img(element_type), (size, size))
         self.color = ELEMENT_RULES[element_type]["color"]
         self.waves = []
+        self.trail = []
         self.contamination_radius = 50
 
     def apply_force(self, force: pygame.Vector2):
@@ -39,16 +40,16 @@ class Block:
         """Calcule une force à l'opposé d'un prédateur"""
         return -self.seek(predator_pos)
 
-    def move(self, screen_rect, black_block = False):
+    def move(self, screen_rect, dt, black_block = False):
         if black_block==False and self.type == "black":
             return  # Le bloc noir ne bouge pas
         
         # Application de l'accélération
-        self.vel += self.acc
+        self.vel += self.acc * dt * 100
         if self.vel.length() > MAX_SPEED:
             self.vel.scale_to_length(MAX_SPEED)
-        
-        self.pos += self.vel
+
+        self.pos += self.vel * dt * 100
         self.acc *= 0 # Réinitialise l'accélération à chaque frame
         # Synchronisation du rect avant les tests
         self.rect.topleft = (self.pos.x, self.pos.y)
@@ -190,14 +191,19 @@ class Block:
             self.waves.append(ContaminationWave(self.rect.centerx, self.rect.centery, self.contamination_radius))
 
     def update_visuals(self):
-        """Met à jour toutes les ondes actives"""
-        for w in self.waves[:]:
-            if not w.update():
-                self.waves.remove(w)
+        self.trail.append(pygame.Vector2(self.pos.x, self.pos.y))
+        if len(self.trail) > 10: # Longueur de la traînée
+            self.trail.pop(0)
 
     def draw(self, screen):
-        for w in self.waves:
-            w.draw(screen)
+        self.update_visuals()
+        for i, p in enumerate(self.trail):
+            alpha = int((i / len(self.trail)) * 100) # De plus en plus transparent
+            # Dessine un petit rectangle ou point de la couleur du bloc
+            trail_surf = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+            trail_surf.fill((*self.color, alpha))
+            screen.blit(trail_surf, (p.x, p.y))
+
         
         if self.image:
             screen.blit(self.image, self.rect)

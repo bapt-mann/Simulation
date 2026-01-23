@@ -6,11 +6,9 @@ class AiManager:
 
     @staticmethod
     def wandering_block_ai(block):
-        wander_force = pygame.Vector2(
-                        random.uniform(-MAX_FORCE, MAX_FORCE), 
-                        random.uniform(-MAX_FORCE, MAX_FORCE)
-                    )
-        block.apply_force(wander_force)
+        # Au lieu d'un random total, on ajoute juste une petite variation à la direction actuelle
+        steer = pygame.Vector2(random.uniform(-0.5, 0.5), random.uniform(-0.5, 0.5))
+        block.apply_force(steer)
         
     @staticmethod
     def following_block_ai(block, target_block):

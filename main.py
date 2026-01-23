@@ -21,8 +21,8 @@ def main():
     sim.add_wall(0, wall_height_pos, SCREEN_WIDTH, 10)         # Mur horizontal
     sim.add_wall(middle_x, wall_height_pos, 10, SCREEN_HEIGHT) # Mur vertical bas
 
-    block_number = 300
-    block_size = 10
+    block_number = 100
+    block_size = 15
 
     #region Spawn des blocs par zones
     for _ in range(block_number):
@@ -41,7 +41,7 @@ def main():
         sim.blocks.append(Block(x, y, block_size, "blue"))
     #endregion
 
-    sim.implement_black_block(middle_x - 25, wall_height_pos - 20, 10)
+    sim.implement_black_block(middle_x - 25, wall_height_pos - 20, 15)
 
     TIMER_EVENT = pygame.USEREVENT + 1
     pygame.time.set_timer(TIMER_EVENT, 1000)
@@ -90,7 +90,8 @@ def main():
         sim.draw()
 
         # --- Contrôle du framerate ---
-        clock.tick(FPS)
+        sim.dt = clock.tick(FPS) / 1000.0  # Temps écoulé en secondes (ex: 0.016 pour 60 FPS)
+        sim.update()
 
     pygame.quit()
 
