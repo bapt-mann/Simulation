@@ -8,16 +8,21 @@ from core.managers.AiManager import AiManager
 class Simulation:
     def __init__(self, width, height):
             self.dt = 0
+
             self.screen = pygame.display.set_mode((width, height))
             self.rect = self.screen.get_rect()
+            self.bg_surface = self.create_gradient_surface(width, height)
+
             self.blocks = []
             self.walls = []
+            self.black_blocks = []
+            self.max_black_blocks = 20
+
             self.invert_mode = False
             self.grid = {}  # Grille spatiale pour l'optimisation des collisions
             self.start_wall = False
 
-            self.black_blocks = []
-            self.max_black_blocks = 50
+
 
     def add_wall(self, x, y, w, h):
         wall = Wall(x, y, w, h)
@@ -107,35 +112,47 @@ class Simulation:
             self.infect_to_black(b1)
             return
         
-        winner = b1.type if ELEMENT_RULES[b1.type]["beats"] == b2.type else b2.type
+        winner = b1.type if b2.type in ELEMENT_RULES[b1.type]["beats"] else b2.type
         loser = b2.type if winner == b1.type else b1.type
         
         target_type = winner if not self.invert_mode else loser
         b1.change_type(target_type)
         b2.change_type(target_type)
 
+    def create_gradient_surface(self, width: int, height: int) -> pygame.Surface:
+        """Crée un dégradé parfaitement lisse via interpolation matérielle"""
+        # On crée une surface de seulement 1x2 pixels
+        small_surf = pygame.Surface((1, 2))
+        small_surf.set_at((0, 0), COLOR_BG_TOP)
+        small_surf.set_at((0, 1), COLOR_BG_BOTTOM)
+        
+        # On l'étire à la taille de l'écran avec l'algorithme 'smoothscale'
+        # C'est ce qui supprime l'effet d'escalier
+        return pygame.transform.smoothscale(small_surf, (width, height))
+    
     def draw_background(self):
-        for y in range(self.rect.height):
-            ratio = y / self.rect.height
-            r = int(COLOR_BG_TOP[0] * (1-ratio) + COLOR_BG_BOTTOM[0] * ratio)
-            g = int(COLOR_BG_TOP[1] * (1-ratio) + COLOR_BG_BOTTOM[1] * ratio)
-            b = int(COLOR_BG_TOP[2] * (1-ratio) + COLOR_BG_BOTTOM[2] * ratio)
-            pygame.draw.line(self.screen, (r, g, b), (0, y), (self.rect.width, y))
+        # On affiche simplement l'image pré-calculée (gain de FPS énorme)
+        self.screen.blit(self.bg_surface, (0, 0))
 
     def update(self):
             AiManager.manage_block_ai(self)
             # Mouvement
             for b in self.blocks:
                 b.move(self.rect, self.dt, True if not self.start_wall else False)
+
+            # 3. RÉSOLUTION PHYSIQUE (Sub-stepping)
+            # On répète les tests de collision 3 fois pour stabiliser les empilements
+            for _ in range(3):
+                # Murs
+                for b in self.blocks:
+                    for w in self.walls:
+                        b.collide_with_wall(w)
+                # Interactions entre blocs
+                self.handle_interactions()
+            
+            for b in self.blocks:
                 b.update_visuals()
 
-            # On gère les collisions avec les murs
-            for b in self.blocks:
-                for w in self.walls:
-                    b.collide_with_wall(w)
-
-            # Interactions entre blocs
-            self.handle_interactions()
 
     def draw(self):
         self.draw_background()

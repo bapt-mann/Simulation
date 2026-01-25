@@ -17,11 +17,17 @@ def main():
     #  Configuration initiale du terrain
     wall_height_pos = SCREEN_HEIGHT // 3
     middle_x = SCREEN_WIDTH // 2
+    gap = 80  # Taille de l'ouverture (le bloc fait 30, donc 80 laisse de la marge)
+    half_gap = gap // 2
     
-    sim.add_wall(0, wall_height_pos, SCREEN_WIDTH, 10)         # Mur horizontal
-    sim.add_wall(middle_x, wall_height_pos, 10, SCREEN_HEIGHT) # Mur vertical bas
+    # Mur horizontal GAUCHE
+    sim.add_wall(0, wall_height_pos, middle_x - half_gap, 10) 
+    # Mur horizontal DROIT
+    sim.add_wall(middle_x + half_gap, wall_height_pos, SCREEN_WIDTH - (middle_x + half_gap), 10)
+    # Mur vertical BAS (on commence plus bas pour laisser le trou)
+    sim.add_wall(middle_x, wall_height_pos + half_gap, 10, SCREEN_HEIGHT - (wall_height_pos + half_gap))
 
-    block_number = 100
+    block_number = 150
     block_size = 15
 
     #region Spawn des blocs par zones
@@ -41,7 +47,7 @@ def main():
         sim.blocks.append(Block(x, y, block_size, "blue"))
     #endregion
 
-    sim.implement_black_block(middle_x - 25, wall_height_pos - 20, 15)
+    sim.implement_black_block(middle_x - 10, wall_height_pos, 30)
 
     TIMER_EVENT = pygame.USEREVENT + 1
     pygame.time.set_timer(TIMER_EVENT, 1000)
@@ -61,8 +67,8 @@ def main():
             
             if event.type == pygame.MOUSEBUTTONDOWN and sim.start_wall:
                 sim.start_wall = False
-                sim.walls.pop(0)
-                sim.walls.pop(0)
+                for _ in range(len(sim.walls)):
+                    sim.walls.pop(0)
 
                 print("Barrières supprimées")
 
@@ -90,8 +96,7 @@ def main():
         sim.draw()
 
         # --- Contrôle du framerate ---
-        sim.dt = clock.tick(FPS) / 1000.0  # Temps écoulé en secondes (ex: 0.016 pour 60 FPS)
-        sim.update()
+        clock.tick(FPS)
 
     pygame.quit()
 

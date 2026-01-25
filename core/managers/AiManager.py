@@ -11,9 +11,22 @@ class AiManager:
         block.apply_force(steer)
         
     @staticmethod
-    def following_block_ai(block, target_block):
-        """Fait suivre un autre bloc au bloc."""
-        block.apply_force(block.seek(target_block.pos))
+    def following_block_ai(block, simulation, target_block):
+        """Comportement de meute : rester dans une zone autour du leader"""
+        # On définit le rayon de la "zone" (ex: 100 pixels)
+        ZONE_RADIUS = 50
+        dist = block.pos.distance_to(target_block.pos)
+
+        if dist > ZONE_RADIUS:
+            # Si le bloc est en dehors de la zone, il utilise 'arrive' pour la rejoindre
+            # On met un slowing_radius un peu plus grand pour un freinage doux
+            block.apply_force(block.arrive(target_block.pos, slowing_radius=150))
+        else:
+            # S'il est déjà dans la zone, on lui donne un comportement erratique léger
+            # pour éviter qu'ils ne soient tous statiques au même endroit
+            AiManager.pursue_block_ai(block, simulation)
+            # On ajoute une petite friction supplémentaire pour stabiliser la meute dans la zone
+            block.vel *= 0.95
 
     @staticmethod
     def flee_block_ai(block, simulation):
@@ -36,7 +49,7 @@ class AiManager:
                                 closest_danger = other.pos
                                 min_dist = dist
                             # PRIORITÉ 2 : Le prédateur naturel (si pas de noir à proximité)
-                            elif closest_danger is None and block.type == ELEMENT_RULES[other.type]["beats"]:
+                            elif closest_danger is None and block.type in ELEMENT_RULES[other.type]["beats"]:
                                 closest_danger = other.pos
                                 min_dist = dist
 
@@ -64,7 +77,7 @@ class AiManager:
                         dist = block.pos.distance_to(other.pos)
                         if dist < min_dist:
                             # On cherche une proie naturelle
-                            if ELEMENT_RULES[block.type]["beats"] == other.type:
+                            if other.type in ELEMENT_RULES[block.type]["beats"]:
                                 closest_prey = other.pos
                                 min_dist = dist
 
@@ -80,12 +93,13 @@ class AiManager:
         for b in simulation.blocks:
             if simulation.start_wall :
                 AiManager.wandering_block_ai(b)
+                AiManager.flee_block_ai(b, simulation)
                 continue
             if b.type == "black":
                 if simulation.first_black_block == b :
                     AiManager.pursue_block_ai(b, simulation)
                 else:
-                    AiManager.following_block_ai(b, simulation.first_black_block)
+                    AiManager.following_block_ai(b, simulation, simulation.first_black_block)
                 continue
             # CAS 1 : FUIR LES DANGERS
             if AiManager.flee_block_ai(b, simulation):
