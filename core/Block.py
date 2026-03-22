@@ -11,6 +11,7 @@ class Block:
         self.pos = pygame.Vector2(x, y)
         self.vel = pygame.Vector2(0, 0) # On commence à l'arrêt
         self.acc = pygame.Vector2(0, 0) # Accélération (force cumulée)
+        self.max_speed = MAX_SPEED
         self.key = (0, 0)  # Clé de la grille spatiale
 
         self.size = size
@@ -29,7 +30,7 @@ class Block:
         """Calcule une force vers une cible"""
         desired = (target_pos - self.pos)
         if desired.length() > 0:
-            desired = desired.normalize() * MAX_SPEED
+            desired = desired.normalize() * self.max_speed
             steer = desired - self.vel
             if steer.length() > MAX_FORCE:
                 steer.scale_to_length(MAX_FORCE)
@@ -44,9 +45,9 @@ class Block:
         if distance > 0:
             # Si on est à l'intérieur du rayon de ralentissement, on réduit la vitesse
             if distance < slowing_radius:
-                speed = (distance / slowing_radius) * MAX_SPEED
+                speed = (distance / slowing_radius) * self.max_speed
             else:
-                speed = MAX_SPEED
+                speed = self.max_speed
 
             desired = desired.normalize() * speed
             steer = desired - self.vel
@@ -68,8 +69,8 @@ class Block:
         # Application de l'accélération
         self.vel += self.acc 
         self.vel *= FRICTION
-        if self.vel.length() > MAX_SPEED:
-            self.vel.scale_to_length(MAX_SPEED)
+        if self.vel.length() > self.max_speed:
+            self.vel.scale_to_length(self.max_speed)
 
         self.pos += self.vel
         self.acc *= 0 # Réinitialise l'accélération à chaque frame

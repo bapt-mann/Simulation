@@ -2,7 +2,7 @@ import pygame
 
 # Configuration Écran
 # 1920x1080 pour écran plein, 540x960 pour fenêtre
-SCREEN_WIDTH, SCREEN_HEIGHT = 540, 960
+SCREEN_WIDTH, SCREEN_HEIGHT = 960, 540
 FPS = 30
 CHUNK_SIZE = 80
 
